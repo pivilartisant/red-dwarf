@@ -6,19 +6,53 @@ from reddwarf.data_loader import Loader
 from tests.fixtures import polis_convo_data
 from reddwarf.utils.string_id import cast_int_to_string, recast_string_to_int
 
-
 @pytest.mark.parametrize("reducer", ["pca", "pacmap", "localmap"])
 @pytest.mark.parametrize(
     "polis_convo_data", ["small-no-meta", "small-with-meta"], indirect=True
 )
 def test_run_pipeline_with_statement_and_participant_id_casting(reducer,polis_convo_data):
+    """Test that run_pipeline supports string statement and participant id's and outputs expected data"""
+    fixture = polis_convo_data
+
+    # Load test data
+    loader = Loader(filepaths=[f"{fixture.data_dir}/votes.json"])
+    votes = loader.votes_data
+    ### Test int to string casting for run_pipeline
+
+    # Preprocess votes to convert participant and statement IDs to strings
+    preprocessed_vote_data = cast_int_to_string(votes)
+
+    # preprocessed clustering run_pipeine
+    preprocessed_clustering_result = run_pipeline(
+       votes = preprocessed_vote_data,
+       reducer=reducer
+    )
+
+    # Get preprocessed vote dict
+    preprocessed_vote_matrix = preprocessed_clustering_result.raw_vote_matrix.count(axis="columns").to_dict()
+
+    # Expected values from preprocessed fixture
+    preprocessed_mathdata_results = fixture.math_data["user-vote-counts"]
+    preprocessed_mathdata_results = {str(k)+"p":v for k,v in preprocessed_mathdata_results.items()}
+    assert 1
+
+    assert preprocessed_vote_matrix == preprocessed_mathdata_results
+
+
+
+@pytest.mark.parametrize("reducer", ["pca", "pacmap", "localmap"])
+@pytest.mark.parametrize(
+    "polis_convo_data", ["small-no-meta", "small-with-meta"], indirect=True
+)
+def test_run_pipeline_against_mathdata(reducer,polis_convo_data):
+    """Test that run_pipeline outputs expected data"""
+
     fixture = polis_convo_data
 
     # Load test data
     loader = Loader(filepaths=[f"{fixture.data_dir}/votes.json"])
     votes = loader.votes_data
 
-    ### Test default flow for run_pipeline
 
     # default clustering run_pipeline 
     default_clustering_result = run_pipeline(
@@ -32,6 +66,7 @@ def test_run_pipeline_with_statement_and_participant_id_casting(reducer,polis_co
 
     # Expected default values from fixture
     default_mathdata_results = fixture.math_data["user-vote-counts"]
+    
     default_mathdata_results = {int(k):v for k,v in default_mathdata_results.items()}
 
     # default_clustering_result should equal default mathdata results 
@@ -43,7 +78,7 @@ def test_run_pipeline_with_statement_and_participant_id_casting(reducer,polis_co
     "polis_convo_data", ["small-no-meta", "small-with-meta"], indirect=True
 )
 def test_casting_roundtrip_statement_and_participant_id(polis_convo_data):
-    """Test that un_pipeline works with string participant IDs."""
+    """Test that cating an into to string and string to int does not currupt expected data"""
     fixture = polis_convo_data
     
     # Load test data
